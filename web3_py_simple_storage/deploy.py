@@ -1,11 +1,15 @@
 import json
+import os
+
 import solcx
-import web3
+from web3 import Web3
+from dotenv import load_dotenv
 
 with open("./SimpleStorage.sol", "r") as file:
     simple_storage_file = file.read()
 
 solcx.install_solc('0.8.0')
+load_dotenv()
 # Solidity source code
 compiled_sol = solcx.compile_standard(
     {
@@ -27,7 +31,19 @@ with open("compiled_code.json", "w") as file:
 bytecode = compiled_sol["contracts"]["SimpleStorage.sol"]["SimpleStorage"]["evm"]["bytecode"]["object"]
 abi = compiled_sol["contracts"]["SimpleStorage.sol"]["SimpleStorage"]["abi"]
 
-w3 = web3(web3.HTTPProvider("HTTP://127.0.0.1:7545"))
-chain_id = 5777
+w3 = Web3(Web3.HTTPProvider("HTTP://127.0.0.1:7545"))
+chain_id = 1337
 my_address = "0xBDefedA4A8662680661FAf3E313ED962C1C971f3"
-private_key = "0xa5cd7357171b17d2f1e40c3698b4b1c96ff4df2b71fbe6e609edaae8a016957d"
+private_key = os.getenv("PRIVATE_KEY")
+
+SimpleStorage = w3.eth.contract(abi=abi, bytecode=bytecode)
+nonce = w3.eth.getTransactionCount(my_address)
+transaction = SimpleStorage.constructor().buildTransaction(
+    {
+        "chainId": chain_id,
+        "gasPrice": w3.eth.gas_price,
+        "from": my_address,
+        "nonce": nonce
+    }
+)
+signed_txn =w3.eth.account.sign_transaction(transaction, private_key)
