@@ -47,3 +47,5 @@ transaction = SimpleStorage.constructor().buildTransaction(
     }
 )
 signed_txn =w3.eth.account.sign_transaction(transaction, private_key)
+
+tx_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
