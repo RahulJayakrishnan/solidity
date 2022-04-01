@@ -31,9 +31,9 @@ with open("compiled_code.json", "w") as file:
 bytecode = compiled_sol["contracts"]["SimpleStorage.sol"]["SimpleStorage"]["evm"]["bytecode"]["object"]
 abi = compiled_sol["contracts"]["SimpleStorage.sol"]["SimpleStorage"]["abi"]
 
-w3 = Web3(Web3.HTTPProvider("HTTP://127.0.0.1:7545"))
-chain_id = 1337
-my_address = "0xBDefedA4A8662680661FAf3E313ED962C1C971f3"
+w3 = Web3(Web3.HTTPProvider("https://rinkeby.infura.io/v3/9bc637ca65144048a4fc77a43b3979ec"))
+chain_id = 4
+my_address = "0x5B42291934d644CC2e79392B46352cdCE297f03D"
 private_key = os.getenv("PRIVATE_KEY")
 
 SimpleStorage = w3.eth.contract(abi=abi, bytecode=bytecode)
@@ -49,3 +49,21 @@ transaction = SimpleStorage.constructor().buildTransaction(
 signed_txn =w3.eth.account.sign_transaction(transaction, private_key)
 
 tx_hash = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
+tx_receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
+
+simple_storage = w3.eth.contract(address=tx_receipt.contractAddress, abi=abi)
+
+store_transaction = simple_storage.functions.store(11).buildTransaction(
+    {
+        "chainId": chain_id,
+        "gasPrice": w3.eth.gas_price,
+        "from": my_address,
+        "nonce": nonce +1
+    }
+)
+signed_store_txn = w3.eth.account.sign_transaction(store_transaction, private_key)
+tx_hash = w3.eth.sendRawTransaction(signed_store_txn.rawTransaction)
+w3.eth.wait_for_transaction_receipt(
+    tx_hash
+)
+print(simple_storage.functions.retrieve().call())
